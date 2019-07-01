@@ -1,6 +1,42 @@
 const userModel = require('../models/userModel')
+// const passport = require('../passport')
+const config = require('../config/dev')
 const bcrypt = require('bcrypt')
-exports.login = () =>{}
+const jwt = require('jsonwebtoken')
+exports.profile  = ()=>{}
+exports.login = (req,res) =>{
+    const email = req.body.email
+    const password  = req.body.password
+    if((!password) || (!email)){
+        return res.status(422).send({errors:[{title:'Data Missing',detail:'Provide email and Password'}]})
+    }
+    userModel.findOne({email:email},(err,user)=>{
+        if(err){
+            res.status(422).send(err)
+        }
+        if(!user){
+            res.status(422).send({message:'User does not exist!'})
+            
+        }
+        async function checkUser(user,password){
+            const match  = await bcrypt.compare(password, user.password);
+            if(match){
+                const token = jwt.sign({
+                    userId:user.id,
+                    username: user.username,
+                },config.secret,{expiresIn:000160*2})
+                res.status(200).send({title:'Logged In!',token:token})
+            }
+            else{
+                res.status(422).send({message:'Password Incorrect'})
+            }
+        }
+        let object = {}
+        checkUser(user,password)    
+    })
+    
+}
+
 exports.register = (req,res) =>{
     const {username,email,password,confirmPassword} = req.body
     if((!password)||(!email)){
